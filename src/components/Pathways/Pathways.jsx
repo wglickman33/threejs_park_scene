@@ -5,43 +5,33 @@ const Pathways = ({ scene }) => {
   useEffect(() => {
     if (!scene) return;
 
-    // Helper function to get ground height at position
     const getGroundHeight = (x, z) => {
-      // Cast a ray from above to find the ground height
       const raycaster = new THREE.Raycaster();
       raycaster.set(new THREE.Vector3(x, 10, z), new THREE.Vector3(0, -1, 0));
 
-      // Find intersections with objects that could be ground
       const intersects = raycaster.intersectObjects(scene.children, true);
 
-      // Filter for actual ground objects (avoiding trees, benches, etc.)
       for (let i = 0; i < intersects.length; i++) {
-        // Simple heuristic: consider objects near y=0 as ground
         if (Math.abs(intersects[i].point.y) < 5) {
           return intersects[i].point.y;
         }
       }
 
-      return 0; // Default if nothing found
+      return 0;
     };
 
-    // Create improved park pathways
     const createPaths = () => {
       const pathGroup = new THREE.Group();
 
-      // Enhanced path materials for better appearance
       const createPathMaterials = () => {
-        // Main path material with improved texture
         const pathCanvas = document.createElement("canvas");
         pathCanvas.width = 128;
         pathCanvas.height = 128;
         const ctx = pathCanvas.getContext("2d");
 
-        // Base color
         ctx.fillStyle = "#ddd0bb";
         ctx.fillRect(0, 0, 128, 128);
 
-        // Add gravel-like texture
         for (let i = 0; i < 300; i++) {
           const x = Math.random() * 128;
           const y = Math.random() * 128;
@@ -67,17 +57,14 @@ const Pathways = ({ scene }) => {
           side: THREE.DoubleSide,
         });
 
-        // Edge material with different texture
         const edgeCanvas = document.createElement("canvas");
         edgeCanvas.width = 128;
         edgeCanvas.height = 64;
         const edgeCtx = edgeCanvas.getContext("2d");
 
-        // Base color for edge
         edgeCtx.fillStyle = "#c2b6a3";
         edgeCtx.fillRect(0, 0, 128, 64);
 
-        // Add texture elements
         for (let i = 0; i < 100; i++) {
           const x = Math.random() * 128;
           const y = Math.random() * 64;
@@ -105,11 +92,8 @@ const Pathways = ({ scene }) => {
 
       const { pathMaterial, edgeMaterial } = createPathMaterials();
 
-      // Create a curved path using bezier curves for smoother natural look
       const createSmoothPath = (start, end, width, controlPoints = []) => {
-        // If control points provided, create a curved path
         if (controlPoints.length > 0) {
-          // Create a smooth curved path using a curve
           const curve = new THREE.CubicBezierCurve3(
             new THREE.Vector3(start[0], 0, start[1]),
             new THREE.Vector3(controlPoints[0][0], 0, controlPoints[0][1]),
@@ -117,16 +101,13 @@ const Pathways = ({ scene }) => {
             new THREE.Vector3(end[0], 0, end[1])
           );
 
-          // Sample points along the curve
           const points = curve.getPoints(30);
           const pathPoints = [];
 
-          // Create width-adjusted points for the path
           for (let i = 0; i < points.length - 1; i++) {
             const current = points[i];
             const next = points[i + 1];
 
-            // Calculate direction and perpendicular
             const direction = new THREE.Vector3()
               .subVectors(next, current)
               .normalize();
@@ -136,7 +117,6 @@ const Pathways = ({ scene }) => {
               direction.x
             );
 
-            // Create the 4 corners of this path segment
             const halfWidth = width / 2;
             const v1 = new THREE.Vector3().addVectors(
               current,
@@ -155,23 +135,19 @@ const Pathways = ({ scene }) => {
               perpendicular.clone().multiplyScalar(halfWidth)
             );
 
-            // Store segment
-            pathPoints.push([v1, v2, v4, v3]); // Order for correct face orientation
+            pathPoints.push([v1, v2, v4, v3]);
           }
 
-          // Create geometry from these points
           const pathGeometry = new THREE.BufferGeometry();
           const vertices = [];
           const indices = [];
 
-          // Add all vertices
           for (let i = 0; i < pathPoints.length; i++) {
             const segment = pathPoints[i];
             for (let j = 0; j < segment.length; j++) {
               vertices.push(segment[j].x, segment[j].y, segment[j].z);
             }
 
-            // Add faces (2 triangles per segment)
             const baseIndex = i * 4;
             indices.push(
               baseIndex,
@@ -183,7 +159,6 @@ const Pathways = ({ scene }) => {
             );
           }
 
-          // Set up the geometry
           const positionArray = new Float32Array(vertices);
           pathGeometry.setIndex(indices);
           pathGeometry.setAttribute(
@@ -192,80 +167,63 @@ const Pathways = ({ scene }) => {
           );
           pathGeometry.computeVertexNormals();
 
-          // Create the path mesh
           const path = new THREE.Mesh(pathGeometry, pathMaterial);
           path.receiveShadow = true;
-          path.position.y = 0.01; // Slightly above ground
+          path.position.y = 0.01;
           pathGroup.add(path);
 
-          // Add edge
           createPathEdges(curve, width, 0.2);
 
-          return curve; // Return the curve for potential future use
+          return curve;
         } else {
-          // For straight paths, use the simple method
           const [startX, startZ] = start;
           const [endX, endZ] = end;
 
-          // Calculate path properties
           const length = Math.sqrt(
             Math.pow(endX - startX, 2) + Math.pow(endZ - startZ, 2)
           );
 
           const angle = Math.atan2(endZ - startZ, endX - startX);
 
-          // Create path segment with improved geometry
           const pathGeometry = new THREE.PlaneGeometry(
             length,
             width,
-            Math.max(1, Math.ceil(length / 2)), // Segment length based on path length
+            Math.max(1, Math.ceil(length / 2)),
             1
           );
 
           const path = new THREE.Mesh(pathGeometry, pathMaterial);
 
-          // Adjust vertices to follow terrain
           const positions = pathGeometry.attributes.position;
           for (let i = 0; i < positions.count; i++) {
             const x = positions.getX(i);
             const z = positions.getZ(i);
 
-            // Transform to world space
             const worldX =
               (startX + endX) / 2 + Math.cos(angle) * x - Math.sin(angle) * z;
             const worldZ =
               (startZ + endZ) / 2 + Math.sin(angle) * x + Math.cos(angle) * z;
 
-            // Get ground height at this position
             const groundY = getGroundHeight(worldX, worldZ);
             if (groundY !== 0) {
-              // Adjust height slightly above ground
               positions.setY(i, groundY + 0.02);
             }
           }
 
-          // Update geometry
           positions.needsUpdate = true;
           pathGeometry.computeVertexNormals();
 
-          // Position and rotate
-          path.position.set(
-            (startX + endX) / 2, // midpoint X
-            0.01, // slightly above ground
-            (startZ + endZ) / 2 // midpoint Z
-          );
+          path.position.set((startX + endX) / 2, 0.01, (startZ + endZ) / 2);
 
-          path.rotation.x = -Math.PI / 2; // flat horizontal
-          path.rotation.z = -angle; // align with direction
+          path.rotation.x = -Math.PI / 2;
+          path.rotation.z = -angle;
 
           path.receiveShadow = true;
           pathGroup.add(path);
 
-          // Add path edge details (left and right sides)
           const addPathEdges = () => {
             const edgeWidth = 0.2;
 
-            // Create edges (left and right)
             const edgeGeometry = new THREE.PlaneGeometry(
               length,
               edgeWidth,
@@ -273,11 +231,10 @@ const Pathways = ({ scene }) => {
               1
             );
 
-            // Left edge
             const leftEdge = new THREE.Mesh(edgeGeometry, edgeMaterial);
             leftEdge.position.set(
               (startX + endX) / 2,
-              0.015, // slightly higher than path
+              0.015,
               (startZ + endZ) / 2 - width / 2 - edgeWidth / 2
             );
 
@@ -285,7 +242,6 @@ const Pathways = ({ scene }) => {
             leftEdge.rotation.z = -angle;
             leftEdge.receiveShadow = true;
 
-            // Right edge
             const rightEdge = new THREE.Mesh(edgeGeometry, edgeMaterial);
             rightEdge.position.set(
               (startX + endX) / 2,
@@ -303,7 +259,6 @@ const Pathways = ({ scene }) => {
 
           addPathEdges();
 
-          // Create a line for potential future use
           const line = new THREE.LineCurve3(
             new THREE.Vector3(startX, 0, startZ),
             new THREE.Vector3(endX, 0, endZ)
@@ -313,22 +268,16 @@ const Pathways = ({ scene }) => {
         }
       };
 
-      // Create edge meshes for curved paths
       const createPathEdges = (curve, pathWidth, edgeWidth) => {
-        // Sample points along the curve
         const points = curve.getPoints(30);
 
-        // Create edge geometry for left and right sides
         for (let side = -1; side <= 1; side += 2) {
-          // -1 for left, 1 for right
           const edgePoints = [];
 
-          // Generate points for this edge
           for (let i = 0; i < points.length - 1; i++) {
             const current = points[i];
             const next = points[i + 1];
 
-            // Calculate direction and perpendicular
             const direction = new THREE.Vector3()
               .subVectors(next, current)
               .normalize();
@@ -338,10 +287,8 @@ const Pathways = ({ scene }) => {
               direction.x
             );
 
-            // Offset for this edge
             const offset = (pathWidth / 2 + edgeWidth / 2) * side;
 
-            // Edge points
             const v1 = new THREE.Vector3().addVectors(
               current,
               perpendicular.clone().multiplyScalar(offset)
@@ -359,7 +306,6 @@ const Pathways = ({ scene }) => {
               perpendicular.clone().multiplyScalar(offset + edgeWidth * side)
             );
 
-            // Order points for correct face orientation
             if (side < 0) {
               edgePoints.push([v1, v2, v4, v3]);
             } else {
@@ -367,19 +313,16 @@ const Pathways = ({ scene }) => {
             }
           }
 
-          // Create geometry from these points
           const edgeGeometry = new THREE.BufferGeometry();
           const vertices = [];
           const indices = [];
 
-          // Add all vertices
           for (let i = 0; i < edgePoints.length; i++) {
             const segment = edgePoints[i];
             for (let j = 0; j < segment.length; j++) {
               vertices.push(segment[j].x, segment[j].y + 0.005, segment[j].z); // Slightly higher
             }
 
-            // Add faces (2 triangles per segment)
             const baseIndex = i * 4;
             indices.push(
               baseIndex,
@@ -391,7 +334,6 @@ const Pathways = ({ scene }) => {
             );
           }
 
-          // Set up the geometry
           const positionArray = new Float32Array(vertices);
           edgeGeometry.setIndex(indices);
           edgeGeometry.setAttribute(
@@ -400,16 +342,13 @@ const Pathways = ({ scene }) => {
           );
           edgeGeometry.computeVertexNormals();
 
-          // Create the edge mesh
           const edge = new THREE.Mesh(edgeGeometry, edgeMaterial);
           edge.receiveShadow = true;
           pathGroup.add(edge);
         }
       };
 
-      // Define path network with main paths and curves
       const mainPathSegments = [
-        // Main paths with gentle curves
         {
           start: [-40, 0],
           end: [40, 0],
@@ -428,8 +367,6 @@ const Pathways = ({ scene }) => {
             [-3, 15],
           ],
         },
-
-        // Secondary paths with more natural curves
         {
           start: [-20, -20],
           end: [20, 20],
@@ -448,8 +385,6 @@ const Pathways = ({ scene }) => {
             [5, -5],
           ],
         },
-
-        // Winding path branches
         {
           start: [0, 0],
           end: [15, 15],
@@ -486,8 +421,6 @@ const Pathways = ({ scene }) => {
             [-10, -10],
           ],
         },
-
-        // Additional natural-looking tertiary paths
         {
           start: [15, 15],
           end: [25, 10],
@@ -524,8 +457,6 @@ const Pathways = ({ scene }) => {
             [-22, -12],
           ],
         },
-
-        // Lake access paths
         {
           start: [-15, -15],
           end: [-25, -20],
@@ -546,7 +477,6 @@ const Pathways = ({ scene }) => {
         },
       ];
 
-      // Create all path segments
       const pathCurves = mainPathSegments.map((segment) =>
         createSmoothPath(
           segment.start,
@@ -556,9 +486,7 @@ const Pathways = ({ scene }) => {
         )
       );
 
-      // Add decorative elements along paths
       const addPathDecoration = () => {
-        // Path lamps at key locations
         const lampPositions = [
           { pos: [-20, -20], height: 3.0 },
           { pos: [20, 20], height: 3.0 },
@@ -582,11 +510,9 @@ const Pathways = ({ scene }) => {
           const [x, z] = lamp.pos;
           const groundY = getGroundHeight(x, z) || 0;
 
-          // Lamp post with improved design
           const createLampPost = () => {
             const lampGroup = new THREE.Group();
 
-            // Post base
             const baseGeometry = new THREE.CylinderGeometry(0.2, 0.25, 0.3, 8);
             const baseMaterial = new THREE.MeshStandardMaterial({
               color: 0x555555,
@@ -599,7 +525,6 @@ const Pathways = ({ scene }) => {
             base.castShadow = true;
             lampGroup.add(base);
 
-            // Main post
             const postGeometry = new THREE.CylinderGeometry(
               0.08,
               0.1,
@@ -617,7 +542,6 @@ const Pathways = ({ scene }) => {
             post.castShadow = true;
             lampGroup.add(post);
 
-            // Lamp arm
             const armGeometry = new THREE.CylinderGeometry(0.03, 0.03, 0.4, 8);
             const arm = new THREE.Mesh(armGeometry, postMaterial);
             arm.position.y = lamp.height - 0.1;
@@ -626,7 +550,6 @@ const Pathways = ({ scene }) => {
             arm.castShadow = true;
             lampGroup.add(arm);
 
-            // Lamp head
             const headGeometry = new THREE.ConeGeometry(0.15, 0.25, 8, 1, true);
             const headMaterial = new THREE.MeshStandardMaterial({
               color: 0x444444,
@@ -641,7 +564,6 @@ const Pathways = ({ scene }) => {
             head.castShadow = true;
             lampGroup.add(head);
 
-            // Lamp glass
             const glassGeometry = new THREE.SphereGeometry(
               0.12,
               12,
@@ -662,7 +584,6 @@ const Pathways = ({ scene }) => {
             glass.rotation.x = Math.PI;
             lampGroup.add(glass);
 
-            // Light source
             const light = new THREE.PointLight(0xffeecc, 1, 10);
             light.position.set(0.4, lamp.height - 0.25, 0);
             light.castShadow = true;
@@ -683,7 +604,6 @@ const Pathways = ({ scene }) => {
           pathGroup.add(lampPost);
         });
 
-        // Enhanced benches with better placement along paths
         const benchPositions = [
           { pos: [10, 0], rot: 0, type: "wooden" },
           { pos: [-10, 0], rot: Math.PI, type: "stone" },
@@ -697,13 +617,10 @@ const Pathways = ({ scene }) => {
           const [x, z] = bench.pos;
           const groundY = getGroundHeight(x, z) || 0;
 
-          // Create varied bench types
           const createBench = () => {
             const benchGroup = new THREE.Group();
 
             if (bench.type === "wooden") {
-              // Enhanced wooden bench
-              // Bench base
               const benchGeometry = new THREE.BoxGeometry(2, 0.1, 0.8);
               const woodMaterial = new THREE.MeshStandardMaterial({
                 color: 0x8b4513,
@@ -711,7 +628,6 @@ const Pathways = ({ scene }) => {
                 metalness: 0.0,
               });
 
-              // Create slats for more realistic appearance
               const slatCount = 5;
               const slatWidth = 1.9 / slatCount;
               const gap = 0.05;
@@ -733,7 +649,6 @@ const Pathways = ({ scene }) => {
                 benchGroup.add(slat);
               }
 
-              // Bench back
               for (let i = 0; i < 3; i++) {
                 const backSlat = new THREE.Mesh(
                   new THREE.BoxGeometry(1.9, 0.12, 0.08),
@@ -747,7 +662,6 @@ const Pathways = ({ scene }) => {
                 benchGroup.add(backSlat);
               }
 
-              // Bench legs
               const legGeometry = new THREE.BoxGeometry(0.12, 0.6, 0.6);
               const metalMaterial = new THREE.MeshStandardMaterial({
                 color: 0x444444,
@@ -755,33 +669,27 @@ const Pathways = ({ scene }) => {
                 metalness: 0.8,
               });
 
-              // Left leg (from sitting perspective)
               const leftLeg = new THREE.Mesh(legGeometry, metalMaterial);
               leftLeg.position.set(-0.8, 0.3, 0);
               leftLeg.castShadow = true;
               benchGroup.add(leftLeg);
 
-              // Right leg
               const rightLeg = new THREE.Mesh(legGeometry, metalMaterial);
               rightLeg.position.set(0.8, 0.3, 0);
               rightLeg.castShadow = true;
               benchGroup.add(rightLeg);
             } else if (bench.type === "stone") {
-              // Stone bench variation
               const stoneMaterial = new THREE.MeshStandardMaterial({
                 color: 0x999999,
                 roughness: 1.0,
                 metalness: 0.1,
               });
 
-              // Main stone slab
               const seatGeometry = new THREE.BoxGeometry(2.2, 0.2, 0.9);
 
-              // Add some irregularity to the stone
               const positions = seatGeometry.attributes.position;
               for (let i = 0; i < positions.count; i++) {
                 if (positions.getY(i) > 0) {
-                  // Only modify top vertices
                   positions.setY(
                     i,
                     positions.getY(i) + (Math.random() - 0.5) * 0.05
@@ -805,7 +713,6 @@ const Pathways = ({ scene }) => {
               seat.receiveShadow = true;
               benchGroup.add(seat);
 
-              // Stone supports
               const supportGeometry = new THREE.CylinderGeometry(
                 0.3,
                 0.4,
@@ -813,7 +720,6 @@ const Pathways = ({ scene }) => {
                 8
               );
 
-              // Left support
               const leftSupport = new THREE.Mesh(
                 supportGeometry,
                 stoneMaterial
@@ -822,7 +728,6 @@ const Pathways = ({ scene }) => {
               leftSupport.castShadow = true;
               benchGroup.add(leftSupport);
 
-              // Right support
               const rightSupport = new THREE.Mesh(
                 supportGeometry,
                 stoneMaterial
@@ -842,13 +747,10 @@ const Pathways = ({ scene }) => {
           pathGroup.add(bench);
         });
 
-        // Add path border details (flowers, rocks, etc.)
         const createPathBorders = () => {
           const borderGroup = new THREE.Group();
 
-          // Define border element types
           const borderTypes = [
-            // Rocks
             {
               type: "rock",
               probability: 0.4,
@@ -858,7 +760,6 @@ const Pathways = ({ scene }) => {
                   1
                 );
 
-                // Distort geometry for natural look
                 const positions = rockGeometry.attributes.position;
                 for (let i = 0; i < positions.count; i++) {
                   positions.setX(
@@ -885,11 +786,9 @@ const Pathways = ({ scene }) => {
 
                 const rock = new THREE.Mesh(rockGeometry, rockMaterial);
 
-                // Position the rock at ground level
                 const y = getGroundHeight(position.x, position.z) || 0;
                 rock.position.set(position.x, y + scale * 0.15, position.z);
 
-                // Random rotation for more natural appearance
                 rock.rotation.set(
                   Math.random() * Math.PI * 2,
                   Math.random() * Math.PI * 2,
@@ -904,14 +803,12 @@ const Pathways = ({ scene }) => {
               },
             },
 
-            // Flowers
             {
               type: "flower",
               probability: 0.3,
               createMesh: (scale, position) => {
                 const flowerGroup = new THREE.Group();
 
-                // Stem
                 const stemGeometry = new THREE.CylinderGeometry(
                   0.02,
                   0.02,
@@ -929,18 +826,17 @@ const Pathways = ({ scene }) => {
                 stem.castShadow = true;
                 flowerGroup.add(stem);
 
-                // Choose flower color based on position for visual variety
                 let petalColor;
                 const colorSeed = (position.x * 0.1 + position.z * 0.2) % 1.0;
 
                 if (colorSeed < 0.25) {
-                  petalColor = 0xffff99; // Yellow
+                  petalColor = 0xffff99;
                 } else if (colorSeed < 0.5) {
-                  petalColor = 0xffcccc; // Pink
+                  petalColor = 0xffcccc;
                 } else if (colorSeed < 0.75) {
-                  petalColor = 0x9999ff; // Purple
+                  petalColor = 0x9999ff;
                 } else {
-                  petalColor = 0xffffff; // White
+                  petalColor = 0xffffff;
                 }
 
                 const petalMaterial = new THREE.MeshStandardMaterial({
@@ -950,14 +846,13 @@ const Pathways = ({ scene }) => {
                   side: THREE.DoubleSide,
                 });
 
-                // Flower center
                 const centerGeometry = new THREE.SphereGeometry(
                   0.08 * scale,
                   8,
                   8
                 );
                 const centerMaterial = new THREE.MeshStandardMaterial({
-                  color: 0xffaa00, // Orange
+                  color: 0xffaa00,
                   roughness: 0.8,
                   metalness: 0.0,
                 });
@@ -970,7 +865,6 @@ const Pathways = ({ scene }) => {
                 flowerCenter.castShadow = true;
                 flowerGroup.add(flowerCenter);
 
-                // Create petals
                 const petalCount = 5 + Math.floor(Math.random() * 3);
 
                 for (let i = 0; i < petalCount; i++) {
@@ -989,24 +883,21 @@ const Pathways = ({ scene }) => {
                   );
 
                   petal.rotation.y = angle;
-                  petal.rotation.x = Math.PI / 4; // Tilt petals outward
+                  petal.rotation.x = Math.PI / 4;
 
                   petal.castShadow = true;
                   flowerGroup.add(petal);
                 }
 
-                // Position the flower at ground level
                 const y = getGroundHeight(position.x, position.z) || 0;
                 flowerGroup.position.set(position.x, y, position.z);
 
-                // Slight random rotation
                 flowerGroup.rotation.y = Math.random() * Math.PI * 2;
 
                 return flowerGroup;
               },
             },
 
-            // Grass tufts
             {
               type: "grass",
               probability: 0.3,
@@ -1020,7 +911,6 @@ const Pathways = ({ scene }) => {
                   side: THREE.DoubleSide,
                 });
 
-                // Create multiple grass blades
                 const bladeCount = 5 + Math.floor(Math.random() * 5);
 
                 for (let i = 0; i < bladeCount; i++) {
@@ -1030,12 +920,10 @@ const Pathways = ({ scene }) => {
                     height
                   );
 
-                  // Bend the grass blade gently
                   const positions = bladeGeometry.attributes.position;
                   for (let j = 0; j < positions.count; j++) {
                     const y = positions.getY(j);
                     if (y > 0) {
-                      // Bend more at the top
                       const bendFactor = (y / height) * 0.2 * scale;
                       positions.setX(j, positions.getX(j) + bendFactor);
                     }
@@ -1045,7 +933,6 @@ const Pathways = ({ scene }) => {
 
                   const blade = new THREE.Mesh(bladeGeometry, grassMaterial);
 
-                  // Position within a small area
                   const angle = Math.random() * Math.PI * 2;
                   const radius = Math.random() * 0.1 * scale;
 
@@ -1060,7 +947,6 @@ const Pathways = ({ scene }) => {
                   grassGroup.add(blade);
                 }
 
-                // Position the grass tuft at ground level
                 const y = getGroundHeight(position.x, position.z) || 0;
                 grassGroup.position.set(position.x, y, position.z);
 
@@ -1069,9 +955,7 @@ const Pathways = ({ scene }) => {
             },
           ];
 
-          // Place border elements along paths
           const placeBorderElements = () => {
-            // Generate positions along path edges
             mainPathSegments.forEach((segment) => {
               const [startX, startZ] = segment.start;
               const [endX, endZ] = segment.end;
@@ -1080,7 +964,6 @@ const Pathways = ({ scene }) => {
               let curve;
 
               if (segment.controlPoints && segment.controlPoints.length > 0) {
-                // For curved paths, use the bezier curve
                 curve = new THREE.CubicBezierCurve3(
                   new THREE.Vector3(startX, 0, startZ),
                   new THREE.Vector3(
@@ -1096,17 +979,13 @@ const Pathways = ({ scene }) => {
                   new THREE.Vector3(endX, 0, endZ)
                 );
 
-                // Sample positions along the curve
                 const points = curve.getPoints(
                   Math.ceil(curve.getLength() / 3)
                 );
 
-                // Place elements along both sides of the path
                 for (let i = 1; i < points.length - 1; i += 2) {
-                  // Skip some points for fewer elements
                   const point = points[i];
 
-                  // Get direction at this point
                   const tangent = curve.getTangent(i / (points.length - 1));
                   const perpendicular = new THREE.Vector3(
                     -tangent.z,
@@ -1114,9 +993,7 @@ const Pathways = ({ scene }) => {
                     tangent.x
                   ).normalize();
 
-                  // Offset to both sides
                   for (let side = -1; side <= 1; side += 2) {
-                    // Skip some positions randomly
                     if (Math.random() > 0.4) continue;
 
                     const offset =
@@ -1126,11 +1003,9 @@ const Pathways = ({ scene }) => {
                       z: point.z + perpendicular.z * offset,
                     };
 
-                    // Add some randomness to position
                     pos.x += (Math.random() - 0.5) * 0.3;
                     pos.z += (Math.random() - 0.5) * 0.3;
 
-                    // Choose element type
                     let chosenType = null;
                     let cumProb = 0;
                     const rand = Math.random();
@@ -1151,7 +1026,6 @@ const Pathways = ({ scene }) => {
                   }
                 }
               } else {
-                // For straight paths, use simple linear interpolation
                 const length = Math.sqrt(
                   Math.pow(endX - startX, 2) + Math.pow(endZ - startZ, 2)
                 );
@@ -1162,20 +1036,16 @@ const Pathways = ({ scene }) => {
                   const x = startX + (endX - startX) * t;
                   const z = startZ + (endZ - startZ) * t;
 
-                  // Direction of the path
                   const dx = endX - startX;
                   const dz = endZ - startZ;
                   const pathLength = Math.sqrt(dx * dx + dz * dz);
                   const dirX = dx / pathLength;
                   const dirZ = dz / pathLength;
 
-                  // Perpendicular to path direction
                   const perpX = -dirZ;
                   const perpZ = dirX;
 
-                  // Offset to both sides
                   for (let side = -1; side <= 1; side += 2) {
-                    // Skip some positions randomly
                     if (Math.random() > 0.4) continue;
 
                     const offset =
@@ -1185,11 +1055,9 @@ const Pathways = ({ scene }) => {
                       z: z + perpZ * offset,
                     };
 
-                    // Add some randomness to position
                     pos.x += (Math.random() - 0.5) * 0.3;
                     pos.z += (Math.random() - 0.5) * 0.3;
 
-                    // Choose element type
                     let chosenType = null;
                     let cumProb = 0;
                     const rand = Math.random();
@@ -1218,11 +1086,9 @@ const Pathways = ({ scene }) => {
           return borderGroup;
         };
 
-        // Create and add border elements
         const pathBorders = createPathBorders();
         pathGroup.add(pathBorders);
 
-        // Create and add trash bins
         const createTrashBins = () => {
           const binGroup = new THREE.Group();
 
@@ -1238,13 +1104,11 @@ const Pathways = ({ scene }) => {
           ];
 
           binPositions.forEach(([x, z]) => {
-            // Get ground height
             const groundY = getGroundHeight(x, z) || 0;
 
-            // Bin body
             const binGeometry = new THREE.CylinderGeometry(0.3, 0.25, 0.8, 12);
             const binMaterial = new THREE.MeshStandardMaterial({
-              color: 0x2d572c, // Dark green
+              color: 0x2d572c,
               roughness: 0.9,
               metalness: 0.2,
             });
@@ -1255,7 +1119,6 @@ const Pathways = ({ scene }) => {
             bin.receiveShadow = true;
             binGroup.add(bin);
 
-            // Bin top rim
             const rimGeometry = new THREE.TorusGeometry(0.3, 0.03, 8, 24);
             const metalMaterial = new THREE.MeshStandardMaterial({
               color: 0x444444,
@@ -1273,22 +1136,18 @@ const Pathways = ({ scene }) => {
           return binGroup;
         };
 
-        // Add trash bins
         const trashBins = createTrashBins();
         pathGroup.add(trashBins);
       };
 
-      // Add path decorations
       addPathDecoration();
 
       return pathGroup;
     };
 
-    // Create and add paths to scene
     const pathways = createPaths();
     scene.add(pathways);
 
-    // Cleanup function
     return () => {
       scene.remove(pathways);
 

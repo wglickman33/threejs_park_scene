@@ -18,7 +18,6 @@ const DayNightCycle = ({ scene }) => {
 
     const elements = elementsRef.current;
 
-    // Sky colors
     const dayTopColor = new THREE.Color(0x77bbff);
     const dayBottomColor = new THREE.Color(0xbbddff);
     const nightTopColor = new THREE.Color(0x000022);

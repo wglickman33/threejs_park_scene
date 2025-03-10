@@ -8,12 +8,10 @@ const Ground = ({ scene }) => {
   useEffect(() => {
     if (!scene) return;
 
-    // Create a more detailed ground with mixed textures
     const createDetailedGround = () => {
       const groundSize = 200;
-      const groundSegments = 128; // Increased segments for smoother terrain
+      const groundSegments = 128;
 
-      // Create a larger, more detailed ground plane
       const groundGeometry = new THREE.PlaneGeometry(
         groundSize,
         groundSize,
@@ -21,15 +19,12 @@ const Ground = ({ scene }) => {
         groundSegments
       );
 
-      // Generate smoother, more natural terrain
       const vertices = groundGeometry.attributes.position.array;
 
-      // Create improved Perlin-like noise with multiple frequencies
       const createSmoothNoise = (x, z) => {
-        // Multiple frequency noise for more natural terrain
-        const scale1 = 0.015; // Large features
-        const scale2 = 0.03; // Medium features
-        const scale3 = 0.08; // Small details
+        const scale1 = 0.015;
+        const scale2 = 0.03;
+        const scale3 = 0.08;
 
         const nx1 = Math.sin(x * scale1) * Math.cos(z * scale1);
         const nz1 = Math.cos(x * scale1) * Math.sin(z * scale1);
@@ -40,7 +35,6 @@ const Ground = ({ scene }) => {
         const nx3 = Math.sin(x * scale3) * Math.cos(z * scale3) * 0.25;
         const nz3 = Math.cos(x * scale3) * Math.sin(z * scale3) * 0.25;
 
-        // Combine frequencies with different weights
         return (nx1 + nz1) * 0.6 + (nx2 + nz2) * 0.3 + (nx3 + nz3) * 0.1;
       };
 
@@ -48,37 +42,30 @@ const Ground = ({ scene }) => {
         const x = vertices[i];
         const z = vertices[i + 2];
 
-        // Create a smooth falloff at edges
         const distFromCenter = Math.sqrt(x * x + z * z);
         const edgeFalloff = Math.max(
           0,
           1 - Math.pow(distFromCenter / (groundSize * 0.45), 4)
         );
 
-        // Calculate path influence
         const distFromPath = Math.min(
-          Math.abs(x), // Main path along z-axis
-          Math.abs(z) // Main path along x-axis
+          Math.abs(x),
+          Math.abs(z),
+          Math.abs(x - z) * 0.7071,
+          Math.abs(x + z) * 0.7071
         );
 
-        // Also check diagonal paths
-        const distFromDiagonal1 = Math.abs(x - z) * 0.7071; // 45° diagonal
-        const distFromDiagonal2 = Math.abs(x + z) * 0.7071; // 135° diagonal
         const pathDist = Math.min(
           distFromPath,
-          Math.min(distFromDiagonal1, distFromDiagonal2)
+          Math.min(Math.abs(x - z) * 0.7071, Math.abs(x + z) * 0.7071)
         );
 
-        // Smoother path transition
         const pathInfluence = Math.min(1, pathDist / 8);
 
-        // Generate base height
-        let height = createSmoothNoise(x, z) * 3; // Amplify the effect
+        let height = createSmoothNoise(x, z) * 3;
 
-        // Apply constraints
         height *= edgeFalloff * pathInfluence;
 
-        // Additional terrain features - hills in specific locations
         const addHill = (hillX, hillZ, hillHeight, hillRadius) => {
           const distFromHill = Math.sqrt(
             Math.pow(x - hillX, 2) + Math.pow(z - hillZ, 2)
@@ -87,13 +74,11 @@ const Ground = ({ scene }) => {
           return hillHeight * Math.pow(hillInfluence, 2);
         };
 
-        // Add some gentle hills in specific locations
         height += addHill(-20, 15, 3, 10);
         height += addHill(25, -25, 2.5, 12);
         height += addHill(-30, -20, 2, 8);
         height += addHill(18, 22, 2.8, 9);
 
-        // Ensure water areas are flat or depressed
         const waterAreas = [
           { x: -25, z: -20, radius: 8, depth: -0.3 },
           { x: 25, z: 25, radius: 10, depth: -0.4 },
@@ -106,7 +91,6 @@ const Ground = ({ scene }) => {
           );
           const waterInfluence = Math.max(0, 1 - distFromWater / area.radius);
 
-          // Create a smooth depression for water areas
           if (waterInfluence > 0) {
             const depressionFactor = Math.pow(waterInfluence, 2);
             height =
@@ -117,64 +101,41 @@ const Ground = ({ scene }) => {
         vertices[i + 1] = height;
       }
 
-      // Update the geometry after modifying vertices
       groundGeometry.attributes.position.needsUpdate = true;
       groundGeometry.computeVertexNormals();
 
-      // Load textures for the ground
       const textureLoader = new THREE.TextureLoader();
 
-      // Grass texture - with error handling
       let grassTexture;
       try {
         grassTexture = textureLoader.load(
-          "https://threejs.org/examples/textures/terrain/grasslight-big.jpg",
-          // Success callback
-          function (texture) {
-            console.log("Ground texture loaded successfully");
-            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(30, 30); // Increased repeat for less obvious tiling
-
-            // Try to set encoding if supported
-            try {
-              texture.encoding = THREE.sRGBEncoding;
-            } catch (e) {
-              console.warn(
-                "sRGBEncoding not supported in this Three.js version"
-              );
-            }
-
-            // Update material after texture is loaded
-            if (groundRef.current && groundRef.current.material) {
-              groundRef.current.material.needsUpdate = true;
-            }
-          },
-          // Progress callback
-          undefined,
-          // Error callback
-          function (err) {
-            console.error("Error loading ground texture:", err);
-          }
+          "https://threejs.org/examples/textures/terrain/grasslight-big.jpg"
         );
+        grassTexture.wrapS = grassTexture.wrapT = THREE.RepeatWrapping;
+        grassTexture.repeat.set(30, 30);
+
+        try {
+          grassTexture.encoding = THREE.sRGBEncoding;
+        } catch (e) {}
+
+        if (groundRef.current && groundRef.current.material) {
+          groundRef.current.material.needsUpdate = true;
+        }
       } catch (e) {
-        console.error("Failed to load ground texture:", e);
-        // Fallback to a solid color if texture loading fails
         grassTexture = null;
       }
 
-      // Create a material with improved properties
       const groundMaterial = new THREE.MeshStandardMaterial({
-        color: grassTexture ? 0xffffff : 0x4f7942, // Use white with texture or forest green without
+        color: grassTexture ? 0xffffff : 0x4f7942,
         map: grassTexture,
         roughness: 0.9,
         metalness: 0.05,
         side: THREE.DoubleSide,
       });
 
-      // Create the ground mesh
       const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-      ground.rotation.x = -Math.PI / 2; // Rotate to be horizontal
-      ground.position.y = -0.5; // Lower it slightly below zero
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.5;
       ground.receiveShadow = true;
 
       return {
@@ -184,16 +145,13 @@ const Ground = ({ scene }) => {
       };
     };
 
-    // Create ground and add to scene
     const ground = createDetailedGround();
     groundRef.current = ground;
     scene.add(ground.mesh);
 
-    // Add ground details - optimized for better performance and aesthetics
     const addGroundDetails = () => {
       const details = new THREE.Group();
 
-      // Add scattered rocks with more natural placement
       const rockPositions = [
         { x: 12, z: 8, scale: 0.6, rotation: 1.2 },
         { x: -15, z: 3, scale: 0.5, rotation: 0.4 },
@@ -203,7 +161,6 @@ const Ground = ({ scene }) => {
         { x: -10, z: -18, scale: 0.9, rotation: 0.3 },
       ];
 
-      // Improved rock material
       const rockMaterial = new THREE.MeshStandardMaterial({
         color: 0x888888,
         roughness: 0.9,
@@ -211,17 +168,14 @@ const Ground = ({ scene }) => {
       });
 
       rockPositions.forEach((pos) => {
-        // Create more natural rock geometry
         const rockGeometry = new THREE.DodecahedronGeometry(0.8, 0);
 
-        // Distort the rock for more natural appearance
         const positions = rockGeometry.attributes.position;
         for (let i = 0; i < positions.count; i++) {
           const x = positions.getX(i);
           const y = positions.getY(i);
           const z = positions.getZ(i);
 
-          // Add random variation to vertices
           positions.setX(i, x + (Math.random() - 0.5) * 0.2);
           positions.setY(i, y + (Math.random() - 0.5) * 0.2);
           positions.setZ(i, z + (Math.random() - 0.5) * 0.2);
@@ -231,7 +185,6 @@ const Ground = ({ scene }) => {
 
         const rock = new THREE.Mesh(rockGeometry, rockMaterial);
 
-        // Position and scale the rock
         rock.position.set(pos.x, 0.35, pos.z);
         rock.scale.set(pos.scale, pos.scale * 0.7, pos.scale);
         rock.rotation.set(
@@ -245,11 +198,8 @@ const Ground = ({ scene }) => {
         details.add(rock);
       });
 
-      // Add ground patches (grass variation, flowers, etc.)
       const addGroundPatches = () => {
-        // Create distinct types of ground patches
         const patchTypes = [
-          // Dense grass patches
           {
             count: 20,
             geometry: new THREE.CircleGeometry(2, 8),
@@ -261,7 +211,6 @@ const Ground = ({ scene }) => {
             heightOffset: 0.02,
             scaleRange: [1, 2],
           },
-          // Flower patches
           {
             count: 15,
             geometry: new THREE.CircleGeometry(1.5, 8),
@@ -273,7 +222,6 @@ const Ground = ({ scene }) => {
             heightOffset: 0.04,
             scaleRange: [0.8, 1.5],
           },
-          // Dirt patches
           {
             count: 12,
             geometry: new THREE.CircleGeometry(1.8, 8),
@@ -287,16 +235,14 @@ const Ground = ({ scene }) => {
           },
         ];
 
-        // Create all patch types
         patchTypes.forEach((patchType) => {
           for (let i = 0; i < patchType.count; i++) {
             const patch = new THREE.Mesh(
               patchType.geometry,
               patchType.material
             );
-            patch.rotation.x = -Math.PI / 2; // Make horizontal
+            patch.rotation.x = -Math.PI / 2;
 
-            // Avoid placing patches in water areas or on paths
             let validPosition = false;
             let x, z;
             let attempts = 0;
@@ -305,7 +251,6 @@ const Ground = ({ scene }) => {
               x = (Math.random() - 0.5) * 80;
               z = (Math.random() - 0.5) * 80;
 
-              // Check if near water
               const nearWater = [
                 { x: -25, z: -20, radius: 10 },
                 { x: 25, z: 25, radius: 12 },
@@ -317,7 +262,6 @@ const Ground = ({ scene }) => {
                 return dist < water.radius;
               });
 
-              // Check if near path
               const nearPath =
                 Math.min(
                   Math.abs(x),
@@ -351,11 +295,9 @@ const Ground = ({ scene }) => {
       return details;
     };
 
-    // Add details to the scene
     const groundDetails = addGroundDetails();
     scene.add(groundDetails);
 
-    // Cleanup function
     return () => {
       scene.remove(ground.mesh);
       ground.geometry.dispose();

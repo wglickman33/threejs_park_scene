@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import * as THREE from "three";
 import "./Parkour.css";
 
@@ -6,7 +6,6 @@ const Parkour = ({ scene }) => {
   useEffect(() => {
     if (!scene) return;
 
-    // Helper function to get the ground height at a specific position
     const getGroundHeight = (x, z) => {
       const raycaster = new THREE.Raycaster();
       raycaster.set(new THREE.Vector3(x, 10, z), new THREE.Vector3(0, -1, 0));
@@ -22,22 +21,17 @@ const Parkour = ({ scene }) => {
       return 0;
     };
 
-    // Create a more visually appealing parkour course with various obstacles
     const parkourGroup = new THREE.Group();
 
-    // Enhanced materials with better textures and properties
     const createWoodMaterial = () => {
-      // Create canvas for wood grain texture
       const canvas = document.createElement("canvas");
       canvas.width = 256;
       canvas.height = 256;
       const ctx = canvas.getContext("2d");
 
-      // Base wood color
       ctx.fillStyle = "#8b4513";
       ctx.fillRect(0, 0, 256, 256);
 
-      // Add wood grain texture
       ctx.strokeStyle = "#73390d";
       ctx.lineWidth = 1;
 
@@ -59,7 +53,6 @@ const Parkour = ({ scene }) => {
         ctx.stroke();
       }
 
-      // Add some knots
       for (let i = 0; i < 5; i++) {
         const x = Math.random() * 256;
         const y = Math.random() * 256;
@@ -93,21 +86,17 @@ const Parkour = ({ scene }) => {
     const woodMaterial = createWoodMaterial();
 
     const createMetalMaterial = () => {
-      // Create canvas for metal texture
       const canvas = document.createElement("canvas");
       canvas.width = 256;
       canvas.height = 256;
       const ctx = canvas.getContext("2d");
 
-      // Base metal color
       ctx.fillStyle = "#777777";
       ctx.fillRect(0, 0, 256, 256);
 
-      // Add subtle brushed metal effect
       ctx.strokeStyle = "#999999";
       ctx.lineWidth = 1;
 
-      // Horizontal brushed effect
       for (let i = 0; i < 150; i++) {
         const y = Math.random() * 256;
         ctx.beginPath();
@@ -117,7 +106,6 @@ const Parkour = ({ scene }) => {
         ctx.stroke();
       }
 
-      // Add some wear marks and dents
       for (let i = 0; i < 30; i++) {
         const x = Math.random() * 256;
         const y = Math.random() * 256;
@@ -144,17 +132,14 @@ const Parkour = ({ scene }) => {
     const metalMaterial = createMetalMaterial();
 
     const createStoneMaterial = () => {
-      // Create canvas for stone texture
       const canvas = document.createElement("canvas");
       canvas.width = 256;
       canvas.height = 256;
       const ctx = canvas.getContext("2d");
 
-      // Base stone color
       ctx.fillStyle = "#999999";
       ctx.fillRect(0, 0, 256, 256);
 
-      // Add stone texture
       for (let i = 0; i < 400; i++) {
         const x = Math.random() * 256;
         const y = Math.random() * 256;
@@ -169,7 +154,6 @@ const Parkour = ({ scene }) => {
         ctx.fill();
       }
 
-      // Add some cracks
       ctx.strokeStyle = "#777777";
       for (let i = 0; i < 10; i++) {
         const x1 = Math.random() * 256;
@@ -204,11 +188,9 @@ const Parkour = ({ scene }) => {
 
     const stoneMaterial = createStoneMaterial();
 
-    // Create a more interesting starting platform with beveled edges
     const createPlatform = (width, depth, height, x, y, z, material) => {
       const platformGroup = new THREE.Group();
 
-      // Create main platform with beveled edges using shape geometry
       const shape = new THREE.Shape();
       const bevel = 0.1;
 
@@ -254,7 +236,6 @@ const Parkour = ({ scene }) => {
 
       const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
 
-      // Rotate and position correctly
       geometry.rotateX(Math.PI / 2);
       geometry.translate(0, height / 2, 0);
 
@@ -265,9 +246,7 @@ const Parkour = ({ scene }) => {
 
       platformGroup.add(platform);
 
-      // Add subtle decorative elements to top surface
       const addDecorations = () => {
-        // Add subtle border along the edge
         const borderWidth = 0.1;
         const borderGeometry = new THREE.BoxGeometry(
           width - 0.1,
@@ -280,7 +259,6 @@ const Parkour = ({ scene }) => {
           metalness: material.metalness,
         });
 
-        // Top border
         const topBorder = new THREE.Mesh(borderGeometry, borderMaterial);
         topBorder.position.set(
           0,
@@ -290,7 +268,6 @@ const Parkour = ({ scene }) => {
         topBorder.castShadow = true;
         platformGroup.add(topBorder);
 
-        // Bottom border
         const bottomBorder = new THREE.Mesh(borderGeometry, borderMaterial);
         bottomBorder.position.set(
           0,
@@ -300,7 +277,6 @@ const Parkour = ({ scene }) => {
         bottomBorder.castShadow = true;
         platformGroup.add(bottomBorder);
 
-        // Left border
         const leftBorderGeo = new THREE.BoxGeometry(
           borderWidth,
           borderWidth,
@@ -315,7 +291,6 @@ const Parkour = ({ scene }) => {
         leftBorder.castShadow = true;
         platformGroup.add(leftBorder);
 
-        // Right border
         const rightBorder = new THREE.Mesh(leftBorderGeo, borderMaterial);
         rightBorder.position.set(
           width / 2 - borderWidth / 2,
@@ -331,7 +306,6 @@ const Parkour = ({ scene }) => {
       return platformGroup;
     };
 
-    // Starting platform with better texture and surface details
     const groundHeight = getGroundHeight(15, 15);
     const startPlatform = createPlatform(
       3,
@@ -344,18 +318,15 @@ const Parkour = ({ scene }) => {
     );
     parkourGroup.add(startPlatform);
 
-    // Create a nicer looking sign
     const createSign = () => {
       const signGroup = new THREE.Group();
 
-      // Post with better geometry and texture
       const postGeometry = new THREE.CylinderGeometry(0.1, 0.12, 2, 8);
       const post = new THREE.Mesh(postGeometry, woodMaterial);
       post.position.set(15, groundHeight + 1.25, 15.8);
       post.castShadow = true;
       signGroup.add(post);
 
-      // Sign board with nicer edges
       const boardGeometry = new THREE.BoxGeometry(1.5, 0.8, 0.1);
       boardGeometry.translate(0, 0.4, 0);
       const board = new THREE.Mesh(boardGeometry, woodMaterial);
@@ -363,24 +334,20 @@ const Parkour = ({ scene }) => {
       board.castShadow = true;
       signGroup.add(board);
 
-      // Add text to the sign
       const createTextTexture = (text) => {
         const canvas = document.createElement("canvas");
         canvas.width = 256;
         canvas.height = 128;
         const ctx = canvas.getContext("2d");
 
-        // Background slightly darker than the sign
         ctx.fillStyle = "#6b3003";
         ctx.fillRect(0, 0, 256, 128);
 
-        // Text
         ctx.font = "bold 24px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = "#ffffff";
 
-        // Multi-line text
         const lines = text.split("\n");
         const lineHeight = 30;
         const startY = 64 - ((lines.length - 1) * lineHeight) / 2;
@@ -405,7 +372,6 @@ const Parkour = ({ scene }) => {
       textPlane.position.set(15, groundHeight + 2, 15.85);
       signGroup.add(textPlane);
 
-      // Add decorative elements to sign
       const cornerSize = 0.1;
       const cornerGeo = new THREE.BoxGeometry(cornerSize, cornerSize, 0.15);
       const cornerMaterial = new THREE.MeshStandardMaterial({
@@ -414,7 +380,6 @@ const Parkour = ({ scene }) => {
         metalness: 0.3,
       });
 
-      // Add corners
       [-0.7, 0.7].forEach((x) => {
         [-0.35, 0.35].forEach((y) => {
           const corner = new THREE.Mesh(cornerGeo, cornerMaterial);
@@ -429,25 +394,20 @@ const Parkour = ({ scene }) => {
     const sign = createSign();
     parkourGroup.add(sign);
 
-    // First jump - stepping stones with more natural shapes
     const createSteppingStone = (x, y, z, size = 1.2) => {
-      // Create a more natural stone shape using multiple geometries
       const stoneGroup = new THREE.Group();
 
-      // Base stone - slightly irregular shape
       const baseGeometry = new THREE.CylinderGeometry(
         size / 2,
         (size / 2) * 1.1,
         0.3,
         6
       );
-      // Deform slightly for more natural look
       const positions = baseGeometry.attributes.position;
       for (let i = 0; i < positions.count; i++) {
         const vertex = new THREE.Vector3();
         vertex.fromBufferAttribute(positions, i);
 
-        // Only modify vertices on the sides for an irregular shape
         if (vertex.y > -0.1 && vertex.y < 0.1) {
           const angle = Math.atan2(vertex.z, vertex.x);
           const radius = Math.sqrt(vertex.x * vertex.x + vertex.z * vertex.z);
@@ -467,7 +427,6 @@ const Parkour = ({ scene }) => {
       stone.receiveShadow = true;
       stoneGroup.add(stone);
 
-      // Add some small details/cracks to the top
       const detailCount = 2 + Math.floor(Math.random() * 3);
       for (let i = 0; i < detailCount; i++) {
         const detailSize = 0.1 + Math.random() * 0.15;
@@ -485,7 +444,6 @@ const Parkour = ({ scene }) => {
 
         const detail = new THREE.Mesh(detailGeometry, detailMaterial);
 
-        // Position on top of stone
         const angle = Math.random() * Math.PI * 2;
         const distance = Math.random() * (size / 2 - detailSize);
         detail.position.set(
@@ -499,16 +457,13 @@ const Parkour = ({ scene }) => {
         stoneGroup.add(detail);
       }
 
-      // Position the stone
       stoneGroup.position.set(x, y, z);
 
-      // Apply a slight random rotation
       stoneGroup.rotation.y = Math.random() * Math.PI * 2;
 
       return stoneGroup;
     };
 
-    // Create a series of stepping stones with more natural placement
     const steppingStonePositions = [
       { x: 17, y: groundHeight + 0.15, z: 15 },
       { x: 19, y: groundHeight + 0.15, z: 16 },
@@ -518,23 +473,19 @@ const Parkour = ({ scene }) => {
     ];
 
     steppingStonePositions.forEach((pos, index) => {
-      // Vary the size slightly for more natural look
       const size = 1.1 + Math.random() * 0.3;
       const stone = createSteppingStone(pos.x, pos.y, pos.z, size);
       parkourGroup.add(stone);
     });
 
-    // Create a more natural looking balance beam with wood grain texture
     const createBalanceBeam = (x, y, z, length, width = 0.3, height = 0.3) => {
       const beamGroup = new THREE.Group();
 
-      // Main beam with subtle curve and wood grain
       const points = [];
       const segments = 10;
 
       for (let i = 0; i <= segments; i++) {
         const t = i / segments;
-        // Add subtle curve to beam
         const yOffset = Math.sin(t * Math.PI) * 0.1;
         points.push(new THREE.Vector3(t * length - length / 2, yOffset, 0));
       }
@@ -554,7 +505,6 @@ const Parkour = ({ scene }) => {
       beam.receiveShadow = true;
       beamGroup.add(beam);
 
-      // Add subtle supports at each end
       [-1, 1].forEach((end) => {
         const supportGeometry = new THREE.CylinderGeometry(0.1, 0.15, y, 6);
         const support = new THREE.Mesh(supportGeometry, woodMaterial);
@@ -563,7 +513,6 @@ const Parkour = ({ scene }) => {
         support.receiveShadow = true;
         beamGroup.add(support);
 
-        // Add support base
         const baseGeometry = new THREE.CylinderGeometry(0.2, 0.25, 0.1, 6);
         const base = new THREE.Mesh(baseGeometry, stoneMaterial);
         base.position.set((end * length) / 2, -y + 0.05, 0);
@@ -579,7 +528,6 @@ const Parkour = ({ scene }) => {
     const balanceBeam = createBalanceBeam(17, groundHeight + 0.15, 8, 6);
     parkourGroup.add(balanceBeam);
 
-    // Platform after beam
     const midPlatformHeight = groundHeight + 0.25;
     const midPlatform = createPlatform(
       2,
@@ -592,11 +540,9 @@ const Parkour = ({ scene }) => {
     );
     parkourGroup.add(midPlatform);
 
-    // Create a more visually interesting climbing wall
     const createClimbingWall = () => {
       const wallGroup = new THREE.Group();
 
-      // Wall base with texture
       const wallGeometry = new THREE.BoxGeometry(3, 4, 0.5);
       const wall = new THREE.Mesh(wallGeometry, stoneMaterial);
       wall.position.set(14, groundHeight + 2, 5);
@@ -604,22 +550,18 @@ const Parkour = ({ scene }) => {
       wall.castShadow = true;
       wallGroup.add(wall);
 
-      // Create climbing grips with more varied shapes and colors
       const createClimbingGrips = () => {
         const gripTypes = [
-          // Small round holds
           {
             geometry: new THREE.SphereGeometry(0.15, 10, 10),
             color: 0xff5733,
             frequency: 0.4,
           },
-          // Edge holds
           {
             geometry: new THREE.BoxGeometry(0.25, 0.07, 0.1),
             color: 0x33ff57,
             frequency: 0.3,
           },
-          // Pinch holds
           {
             geometry: new THREE.CylinderGeometry(0.05, 0.05, 0.25, 8),
             color: 0x3357ff,
@@ -627,7 +569,6 @@ const Parkour = ({ scene }) => {
           },
         ];
 
-        // Grid-like placement with some randomness
         const rows = 6;
         const cols = 5;
 
@@ -636,7 +577,6 @@ const Parkour = ({ scene }) => {
             // Skip some positions
             if (Math.random() > 0.7) continue;
 
-            // Choose grip type
             let gripType;
             const rand = Math.random();
             let accumProb = 0;
@@ -649,7 +589,6 @@ const Parkour = ({ scene }) => {
               }
             }
 
-            // Create grip
             const gripMaterial = new THREE.MeshStandardMaterial({
               color: gripType.color,
               roughness: 0.8,
@@ -658,7 +597,6 @@ const Parkour = ({ scene }) => {
 
             const grip = new THREE.Mesh(gripType.geometry, gripMaterial);
 
-            // Position on wall with slight randomness
             const x = 14 + (-1.2 + col * 0.6) + (Math.random() - 0.5) * 0.3;
             const y =
               groundHeight + (0.5 + row * 0.6) + (Math.random() - 0.5) * 0.2;
@@ -666,7 +604,6 @@ const Parkour = ({ scene }) => {
 
             grip.position.set(x, y, z);
 
-            // Random rotation
             if (
               gripType.geometry.type === "BoxGeometry" ||
               gripType.geometry.type === "CylinderGeometry"
@@ -682,16 +619,13 @@ const Parkour = ({ scene }) => {
 
       createClimbingGrips();
 
-      // Add some decorative elements to the wall
       const addWallFeatures = () => {
-        // Top coping
         const copingGeometry = new THREE.BoxGeometry(3.2, 0.2, 0.7);
         const coping = new THREE.Mesh(copingGeometry, stoneMaterial);
         coping.position.set(14, groundHeight + 4.1, 5);
         coping.castShadow = true;
         wallGroup.add(coping);
 
-        // Side supports
         [-1.6, 1.6].forEach((xOffset) => {
           const supportGeometry = new THREE.BoxGeometry(0.2, 4, 0.7);
           const support = new THREE.Mesh(supportGeometry, stoneMaterial);
@@ -709,7 +643,6 @@ const Parkour = ({ scene }) => {
     const climbingWall = createClimbingWall();
     parkourGroup.add(climbingWall);
 
-    // Platform after climbing wall
     const endPlatformHeight = groundHeight + 4.25;
     const endPlatform = createPlatform(
       3,
@@ -722,24 +655,21 @@ const Parkour = ({ scene }) => {
     );
     parkourGroup.add(endPlatform);
 
-    // Create a more visually appealing zipline
     const createZipline = () => {
       const ziplineGroup = new THREE.Group();
 
-      // Zipline cable with proper curve and thickness
       const cablePoints = [];
       const cableSegments = 20;
 
       for (let i = 0; i <= cableSegments; i++) {
         const t = i / cableSegments;
-        // Catenary curve for realistic hanging cable
         const catenary = Math.cosh(t * 4 - 2) / Math.cosh(2) - 0.5;
 
         cablePoints.push(
           new THREE.Vector3(
-            14.5 - t * 29.5, // x from 14.5 to -15
-            endPlatformHeight - t * 4 + catenary * 0.3, // y dropping with catenary sag
-            3 + t * 12 // z from 3 to 15
+            14.5 - t * 29.5,
+            endPlatformHeight - t * 4 + catenary * 0.3,
+            3 + t * 12
           )
         );
       }
@@ -762,34 +692,28 @@ const Parkour = ({ scene }) => {
       cable.castShadow = true;
       ziplineGroup.add(cable);
 
-      // Starting pole with more detail
       const createPole = (x, y, z, height, isStart) => {
         const poleGroup = new THREE.Group();
 
-        // Main pole
         const poleGeometry = new THREE.CylinderGeometry(0.2, 0.25, height, 8);
         const pole = new THREE.Mesh(poleGeometry, metalMaterial);
         pole.position.set(x, y + height / 2, z);
         pole.castShadow = true;
         poleGroup.add(pole);
 
-        // Base
         const baseGeometry = new THREE.CylinderGeometry(0.3, 0.35, 0.2, 8);
         const base = new THREE.Mesh(baseGeometry, metalMaterial);
         base.position.set(x, y + 0.1, z);
         base.castShadow = true;
         poleGroup.add(base);
 
-        // Top attachment
         const topGeometry = new THREE.BoxGeometry(0.4, 0.3, 0.3);
         const top = new THREE.Mesh(topGeometry, metalMaterial);
         top.position.set(x, y + height, z);
         top.castShadow = true;
         poleGroup.add(top);
 
-        // Only add hook to starting pole
         if (isStart) {
-          // Add hook attachment at top
           const hookGeometry = new THREE.TorusGeometry(
             0.15,
             0.03,
@@ -807,35 +731,29 @@ const Parkour = ({ scene }) => {
         return poleGroup;
       };
 
-      // Starting pole (taller)
       const startPole = createPole(14, endPlatformHeight, 3, 2, true);
       ziplineGroup.add(startPole);
 
-      // Ending pole (shorter)
       const endPole = createPole(15, groundHeight, 15, 1, false);
       ziplineGroup.add(endPole);
 
-      // Handle for zipline that's more visually interesting
       const createHandle = () => {
         const handleGroup = new THREE.Group();
 
-        // Main handle ring
         const handleGeometry = new THREE.TorusGeometry(0.2, 0.03, 16, 32);
         const handle = new THREE.Mesh(handleGeometry, metalMaterial);
         handle.rotation.x = Math.PI / 2;
         handle.castShadow = true;
         handleGroup.add(handle);
 
-        // Add grip wrap to handle
         const gripMaterial = new THREE.MeshStandardMaterial({
           color: 0x222222,
           roughness: 1.0,
           metalness: 0.0,
         });
 
-        // Grip wrapping - cylinder segments around part of the handle
         const wrapCount = 8;
-        const wrapFraction = 0.75; // How much of the handle to wrap
+        const wrapFraction = 0.75;
 
         for (let i = 0; i < wrapCount; i++) {
           const angle = (i / wrapCount) * Math.PI * 2 * wrapFraction;
@@ -847,7 +765,7 @@ const Parkour = ({ scene }) => {
           );
           const wrap = new THREE.Mesh(wrapGeometry, gripMaterial);
 
-          const radius = 0.2; // Same as handle radius
+          const radius = 0.2;
           wrap.position.set(
             Math.cos(angle) * radius,
             0,
@@ -860,7 +778,6 @@ const Parkour = ({ scene }) => {
           handleGroup.add(wrap);
         }
 
-        // Attach the handle to the cable with a connector
         const connectorGeometry = new THREE.CylinderGeometry(
           0.05,
           0.05,
@@ -872,17 +789,13 @@ const Parkour = ({ scene }) => {
         connector.castShadow = true;
         handleGroup.add(connector);
 
-        // Small roller on top of connector
         const rollerGeometry = new THREE.CylinderGeometry(0.07, 0.07, 0.08, 16);
         const roller = new THREE.Mesh(rollerGeometry, metalMaterial);
         roller.position.y = 0.3;
         roller.rotation.x = Math.PI / 2;
         roller.castShadow = true;
         handleGroup.add(roller);
-
-        // Position the handle on the cable
         handleGroup.position.set(14, endPlatformHeight - 0.3, 3.1);
-
         return handleGroup;
       };
 
@@ -895,21 +808,14 @@ const Parkour = ({ scene }) => {
     const zipline = createZipline();
     parkourGroup.add(zipline);
 
-    // Additional fun parkour elements
-
-    // Create a swing rope to add variety
     const createSwingRope = () => {
       const swingGroup = new THREE.Group();
-
-      // Create rope
       const ropeLength = 4;
       const ropePoints = [];
       const ropeSegments = 10;
 
-      // Create a slightly curved rope path
       for (let i = 0; i <= ropeSegments; i++) {
         const t = i / ropeSegments;
-        // Add slight curve to rope
         const xOffset = Math.sin(t * Math.PI) * 0.1;
         ropePoints.push(new THREE.Vector3(xOffset, -t * ropeLength, 0));
       }
@@ -923,18 +829,14 @@ const Parkour = ({ scene }) => {
         false
       );
 
-      // Rope material with texture
       const ropeCanvas = document.createElement("canvas");
       ropeCanvas.width = 64;
       ropeCanvas.height = 64;
       const ropeCtx = ropeCanvas.getContext("2d");
-
-      // Base color
       ropeCtx.fillStyle = "#8b7d6b";
       ropeCtx.fillRect(0, 0, 64, 64);
-
-      // Add rope fiber texture
       ropeCtx.strokeStyle = "#736658";
+
       for (let i = 0; i < 20; i++) {
         ropeCtx.beginPath();
         ropeCtx.moveTo(0, i * 3);
@@ -957,20 +859,17 @@ const Parkour = ({ scene }) => {
       rope.castShadow = true;
       swingGroup.add(rope);
 
-      // Add knots along the rope for grip
       const knotCount = 5;
       for (let i = 1; i <= knotCount; i++) {
         const knotGeometry = new THREE.TorusGeometry(0.08, 0.03, 8, 16);
         const knot = new THREE.Mesh(knotGeometry, ropeMaterial);
 
-        // Position along rope
         const t = i / (knotCount + 1);
         const point = ropeCurve.getPointAt(t);
         const tangent = ropeCurve.getTangentAt(t);
 
         knot.position.copy(point);
 
-        // Orient perpendicular to rope
         const up = new THREE.Vector3(0, 1, 0);
         const axis = new THREE.Vector3().crossVectors(up, tangent).normalize();
         const radians = Math.acos(up.dot(tangent));
@@ -980,7 +879,6 @@ const Parkour = ({ scene }) => {
         swingGroup.add(knot);
       }
 
-      // Create handle at the bottom
       const handleGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.3, 8);
       const handle = new THREE.Mesh(handleGeometry, woodMaterial);
       handle.position.y = -ropeLength;
@@ -988,14 +886,12 @@ const Parkour = ({ scene }) => {
       handle.castShadow = true;
       swingGroup.add(handle);
 
-      // Add attachment at top
       const attachGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.2, 8);
       const attachment = new THREE.Mesh(attachGeometry, metalMaterial);
       attachment.position.y = 0;
       attachment.castShadow = true;
       swingGroup.add(attachment);
 
-      // Position the swing
       swingGroup.position.set(10, midPlatformHeight + 4, 8);
 
       return swingGroup;
@@ -1004,10 +900,8 @@ const Parkour = ({ scene }) => {
     const swingRope = createSwingRope();
     parkourGroup.add(swingRope);
 
-    // Add parkour course to the scene
     scene.add(parkourGroup);
 
-    // Cleanup function
     return () => {
       scene.remove(parkourGroup);
       parkourGroup.traverse((object) => {

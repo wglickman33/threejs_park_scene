@@ -15,7 +15,6 @@ const KeyboardTest = () => {
     const handleKeyDown = (e) => {
       console.log("Key down:", e.code);
 
-      // Update key state based on key code
       switch (e.code) {
         case "KeyW":
           setKeys((prev) => ({ ...prev, w: true }));
@@ -43,7 +42,6 @@ const KeyboardTest = () => {
     const handleKeyUp = (e) => {
       console.log("Key up:", e.code);
 
-      // Update key state based on key code
       switch (e.code) {
         case "KeyW":
           setKeys((prev) => ({ ...prev, w: false }));
@@ -68,11 +66,9 @@ const KeyboardTest = () => {
       }
     };
 
-    // Add event listeners
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
-    // Cleanup
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);

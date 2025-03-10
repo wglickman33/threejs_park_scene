@@ -13,7 +13,6 @@ const UIOverlay = ({
   const [timeSpeed, setTimeSpeed] = useState(1.0);
 
   useEffect(() => {
-    // Hide instructions after some time
     if (controlsEnabled) {
       const timer = setTimeout(() => {
         setShowInstructions(false);
@@ -23,7 +22,6 @@ const UIOverlay = ({
     }
   }, [controlsEnabled]);
 
-  // Alternative direct method to request pointer lock
   const requestPointerLock = () => {
     console.log("Directly requesting pointer lock on document.body");
     const element = document.body;
@@ -34,7 +32,6 @@ const UIOverlay = ({
       console.error("PointerLock API not supported");
     }
 
-    // Also call the regular handler
     if (onStartClick) {
       onStartClick();
     }
@@ -50,7 +47,6 @@ const UIOverlay = ({
     setShowControls(!showControls);
   };
 
-  // Format time of day as clock time
   const formatTimeOfDay = (time) => {
     const hours = Math.floor((time * 24) % 24);
     const minutes = Math.floor((time * 24 * 60) % 60);
