@@ -10,28 +10,17 @@ export const distance = (point1, point2) => {
     return degrees * (Math.PI / 180);
   };
   
-  /**
-   * Convert radians to degrees
-   * @param {number} radians - Angle in radians
-   * @returns {number} - Angle in degrees
-   */
   export const radToDeg = (radians) => {
     return radians * (180 / Math.PI);
   };
   
-  /**
-   * Dispose of Three.js objects properly to prevent memory leaks
-   * @param {Object} object - The Three.js object to dispose
-   */
   export const disposeObject = (object) => {
     if (!object) return;
     
-    // Dispose of geometries
     if (object.geometry) {
       object.geometry.dispose();
     }
     
-    // Dispose of materials
     if (object.material) {
       if (Array.isArray(object.material)) {
         object.material.forEach(material => {
@@ -42,12 +31,10 @@ export const distance = (point1, point2) => {
       }
     }
     
-    // Remove from parent
     if (object.parent) {
       object.parent.remove(object);
     }
     
-    // Recursively dispose of children
     if (object.children) {
       while (object.children.length > 0) {
         disposeObject(object.children[0]);
@@ -55,14 +42,9 @@ export const distance = (point1, point2) => {
     }
   };
   
-  /**
-   * Helper function to dispose of material properties
-   * @param {Object} material - The Three.js material to dispose
-   */
   const disposeMaterial = (material) => {
     if (!material) return;
     
-    // Dispose of textures
     for (const key of Object.keys(material)) {
       const value = material[key];
       if (value && typeof value === 'object' && 'isTexture' in value) {
@@ -70,7 +52,6 @@ export const distance = (point1, point2) => {
       }
     }
     
-    // Dispose of the material itself
     material.dispose();
   };
 
@@ -85,17 +66,14 @@ export const distance = (point1, point2) => {
     let validPosition = false;
     let x, z;
     
-    // Try up to 50 times to find a valid position
     let attempts = 0;
     
     while (!validPosition && attempts < 50) {
       attempts++;
       
-      // Generate random position
       x = Math.random() * (maxX - minX) + minX;
       z = Math.random() * (maxZ - minZ) + minZ;
       
-      // Check if it's far enough away from positions to avoid
       validPosition = true;
       
       for (const pos of avoidPositions) {
