@@ -41,7 +41,7 @@ This project represents my first deep dive into 3D graphics programming, where I
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/threejs-park.git
+git clone https://github.com/wglickman33/threejs_park_scene.git
 
 # Install dependencies
 npm install
